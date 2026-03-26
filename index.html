@@ -1,47 +1,46 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Qwen-VL Visualizer | Projet Académique</title>
+    <title>Qwen-VL Pro Emulator | Visual Grounding</title>
     <style>
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .app-card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 1100px; }
+        :root { --qwen-blue: #5e5ce6; --bg: #f5f5f7; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .app-card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.1); width: 100%; max-width: 1250px; }
         .header { border-bottom: 2px solid #eee; margin-bottom: 20px; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .main { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
-        @media (max-width: 850px) { .main { grid-template-columns: 1fr; } }
+        .main { display: grid; grid-template-columns: 350px 1fr; gap: 25px; }
+        @media (max-width: 950px) { .main { grid-template-columns: 1fr; } }
         
-        textarea { width: 100%; height: 180px; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-family: monospace; font-size: 12px; box-sizing: border-box; }
-        .btn { background: #007aff; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; margin-top: 10px; }
-        .btn-demo { background: #5856d6; width: auto; }
+        textarea { width: 100%; height: 250px; border: 1px solid #ddd; border-radius: 12px; padding: 12px; font-family: 'Fira Code', monospace; font-size: 12px; box-sizing: border-box; background: #fafafa; }
+        .btn { background: var(--qwen-blue); color: white; border: none; padding: 14px; border-radius: 10px; cursor: pointer; font-weight: 600; width: 100%; margin-top: 10px; font-size: 15px; }
+        .btn-demo { background: #34c759; width: auto; }
         
-        /* Zone de prévisualisation */
-        .preview-area { background: #333; border-radius: 10px; position: relative; min-height: 500px; display: flex; align-items: flex-start; justify-content: center; padding: 10px; border: 2px solid #ddd; }
+        .preview-area { background: #1a1a1a; border-radius: 15px; position: relative; min-height: 500px; display: flex; align-items: flex-start; justify-content: center; padding: 15px; border: 4px solid #fff; box-shadow: inset 0 0 50px rgba(0,0,0,0.2); }
         #wrapper { position: relative; display: inline-block; }
-        #view { display: block; max-width: 100%; height: auto; border-radius: 4px; border: 1px solid white; }
-        canvas { position: absolute; top: 0; left: 0; pointer-events: none; width: 100%; height: 100%; }
+        #view { display: block; max-width: 100%; height: auto; border-radius: 8px; }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         
-        .status { font-size: 12px; color: #666; margin-top: 10px; padding: 8px; background: #eef; border-radius: 5px; }
+        .status-bar { margin-top: 15px; padding: 10px; background: #f0f0f5; border-radius: 8px; font-size: 13px; color: #444; border-left: 4px solid var(--qwen-blue); }
     </style>
 </head>
 <body>
 
 <div class="app-card">
     <div class="header">
-        <h1>Qwen-VL Emulator</h1>
-        <button class="btn btn-demo" onclick="loadDemo()">Charger la Démo ✨</button>
+        <h1 style="margin:0">👁️ Qwen-VL Visual Grounding</h1>
+        <button class="btn btn-demo" onclick="loadFullDemo()">Charger Démo Multi-Calques ✨</button>
     </div>
 
     <div class="main">
         <div class="sidebar">
-            <label style="font-weight:bold">1. Choisir une Image</label>
-            <input type="file" id="imgFile" accept="image/*" style="margin-bottom:15px; width:100%">
+            <label style="font-weight:bold">1. Image de la scène</label>
+            <input type="file" id="imgFile" accept="image/*" style="margin-bottom:20px; width:100%">
             
-            <label style="font-weight:bold">2. Texte de Qwen</label>
-            <textarea id="qwenText" placeholder="Collez le texte ici..."></textarea>
+            <label style="font-weight:bold">2. Réponse brute de Qwen (Multi-balises)</label>
+            <textarea id="qwenText" placeholder="Collez ici le texte contenant les balises <ref>, <box>, <polygon> ou <point>..."></textarea>
             
-            <button class="btn" onclick="process()">Appliquer les Calques 👁️</button>
-            <div id="log" class="status">En attente d'image...</div>
+            <button class="btn" onclick="processAll()">Générer tous les calques 🚀</button>
+            <div id="log" class="status-bar">Prêt pour l'analyse.</div>
         </div>
 
         <div class="preview-area">
@@ -59,89 +58,95 @@
     const ctx = canvas.getContext('2d');
     const log = document.getElementById('log');
 
-    // Charger la démo (Correction : on utilise une image qui accepte le CORS)
-    function loadDemo() {
-        image.src = "https://picsum.photos/id/1/800/600"; 
-        document.getElementById('qwenText').value = '<ref>Ordinateur</ref><box>(200,150,750,850)</box>\n<ref>Clavier</ref><polygon>(800,200,800,800,950,800,950,200)</polygon>';
-        log.innerText = "Démo chargée. Cliquez sur 'Appliquer'.";
+    // Palette étendue type Qwen/Alibaba
+    const palette = [
+        {f: 'rgba(255, 59, 48, 0.4)', s: '#ff3b30'}, // Rouge
+        {f: 'rgba(52, 199, 89, 0.4)', s: '#34c759'}, // Vert
+        {f: 'rgba(0, 122, 255, 0.4)', s: '#007aff'}, // Bleu
+        {f: 'rgba(255, 149, 0, 0.4)', s: '#ff9500'}, // Orange
+        {f: 'rgba(175, 82, 222, 0.4)', s: '#af52de'}, // Violet
+        {f: 'rgba(255, 45, 85, 0.4)', s: '#ff2d55'}, // Rose
+        {f: 'rgba(88, 86, 214, 0.4)', s: '#5856d6'}, // Indigo
+        {f: 'rgba(255, 204, 0, 0.4)', s: '#ffcc00'}, // Jaune
+        {f: 'rgba(90, 200, 250, 0.4)', s: '#5ac8fa'}, // Cyan
+        {f: 'rgba(162, 132, 94, 0.4)', s: '#a2845e'}  // Brun
+    ];
+
+    function loadFullDemo() {
+        image.src = "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1000"; // Image Casque & Laptop
+        document.getElementById('qwenText').value = 
+            '<ref>Casque Audio</ref><polygon>(200,450,220,550,400,600,550,550,550,400,400,350)</polygon>\n' +
+            '<ref>Ordinateur</ref><box>(400,100,900,900)</box>\n' +
+            '<ref>Bouton Power</ref><point>(450,520)</point>\n' +
+            '<ref>Logo</ref><point>(350,480)</point>';
+        image.onload = () => { processAll(); };
+        log.innerText = "Démo multi-objets chargée.";
     }
 
-    // Charger fichier local (Lecture simplifiée)
     document.getElementById('imgFile').onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        
         const reader = new FileReader();
-        reader.onload = (ev) => { 
-            image.src = ev.target.result; 
-            log.innerText = "Image chargée avec succès.";
-        };
-        reader.readAsDataURL(file);
+        reader.onload = (ev) => { image.src = ev.target.result; log.innerText = "Image utilisateur chargée."; };
+        reader.readAsDataURL(e.target.files[0]);
     };
 
-    function process() {
-        if (!image.naturalWidth || image.naturalWidth === 0) {
-            alert("L'image n'est pas encore chargée ou est invalide.");
-            return;
-        }
-        
-        // Aligner le canvas sur la taille réelle de l'image
+    function processAll() {
+        if (!image.naturalWidth) return;
         canvas.width = image.naturalWidth;
         canvas.height = image.naturalHeight;
-        
-        const text = document.getElementById('qwenText').value;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        const regex = /<ref>(.*?)<\/ref>\s*<(box|polygon)>\((.*?)\)<\/\2>/g;
-        let match;
-        let count = 0;
+        const text = document.getElementById('qwenText').value;
+        const w = canvas.width; const h = canvas.height;
+        
+        // Regex globale pour attraper TOUTES les balises Qwen
+        const masterRegex = /<ref>(.*?)<\/ref>\s*<(box|polygon|point)>\((.*?)\)<\/\2>/g;
+        let m, count = 0;
 
-        const colors = ['rgba(255, 50, 50, 0.5)', 'rgba(50, 255, 50, 0.5)', 'rgba(50, 150, 255, 0.5)'];
-        const borders = ['#ff0000', '#00ff00', '#0066ff'];
-
-        while ((match = regex.exec(text)) !== null) {
-            const label = match[1];
-            const type = match[2];
-            const coords = match[3].split(',').map(Number);
-            const col = colors[count % colors.length];
-            const brd = borders[count % borders.length];
+        while ((m = masterRegex.exec(text)) !== null) {
+            const label = m[1];
+            const type = m[2];
+            const coords = m[3].split(',').map(Number);
+            const style = palette[count % palette.length];
 
             ctx.beginPath();
+            ctx.fillStyle = style.f;
+            ctx.strokeStyle = style.s;
+            ctx.lineWidth = Math.max(4, w / 250);
+
             if (type === 'box') {
-                const y1 = coords[0] * canvas.height / 1000;
-                const x1 = coords[1] * canvas.width / 1000;
-                const y2 = coords[2] * canvas.height / 1000;
-                const x2 = coords[3] * canvas.width / 1000;
-                ctx.rect(x1, y1, x2 - x1, y2 - y1);
-                drawLabel(label, x1, y1, brd);
-            } else {
-                ctx.moveTo(coords[1] * canvas.width / 1000, coords[0] * canvas.height / 1000);
-                for (let j = 0; j < coords.length; j += 2) {
-                    ctx.lineTo(coords[j+1] * canvas.width / 1000, coords[j] * canvas.height / 1000);
-                }
+                const [y1, x1, y2, x2] = coords.map((v, k) => k%2===0 ? v*h/1000 : v*w/1000);
+                ctx.rect(x1, y1, x2-x1, y2-y1);
+                drawTag(label, x1, y1, style.s);
+            } 
+            else if (type === 'polygon') {
+                ctx.moveTo(coords[1]*w/1000, coords[0]*h/1000);
+                for (let j=0; j<coords.length; j+=2) ctx.lineTo(coords[j+1]*w/1000, coords[j]*h/1000);
                 ctx.closePath();
-                drawLabel(label, coords[1] * canvas.width / 1000, coords[0] * canvas.height / 1000, brd);
+                drawTag(label, coords[1]*w/1000, coords[0]*h/1000, style.s);
+            }
+            else if (type === 'point') {
+                const py = coords[0]*h/1000; const px = coords[1]*w/1000;
+                ctx.arc(px, py, Math.max(10, w/80), 0, Math.PI*2);
+                drawTag(label, px, py, style.s);
             }
 
-            ctx.fillStyle = col;
             ctx.fill();
-            ctx.strokeStyle = brd;
-            ctx.lineWidth = Math.max(5, canvas.width / 150);
             ctx.stroke();
             count++;
         }
-        log.innerText = count + " calques appliqués !";
+        log.innerText = `Analyse terminée : ${count} objets identifiés.`;
     }
 
-    function drawLabel(txt, x, y, color) {
-        const fontSize = Math.max(18, canvas.width/35);
-        ctx.font = `bold ${fontSize}px sans-serif`;
+    function drawTag(txt, x, y, color) {
+        const size = Math.max(16, canvas.width/45);
+        ctx.font = `bold ${size}px sans-serif`;
         const tw = ctx.measureText(txt).width + 20;
-        const th = fontSize * 1.4;
+        const th = size * 1.5;
         ctx.fillStyle = color;
-        ctx.fillRect(x, y - th, tw, th);
+        ctx.roundRect(x, y - th - 5, tw, th, 8); // Coins arrondis style Qwen
+        ctx.fill();
         ctx.fillStyle = "white";
-        ctx.fillText(txt, x + 10, y - (th/4));
+        ctx.fillText(txt, x + 10, y - th/2.5);
     }
 </script>
 
