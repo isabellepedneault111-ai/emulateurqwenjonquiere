@@ -2,151 +2,152 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Qwen-VL Pro Emulator | Visual Grounding</title>
+    <title>Qwen Visual Studio | Créateur de Calques</title>
     <style>
-        :root { --qwen-blue: #5e5ce6; --bg: #f5f5f7; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .app-card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.1); width: 100%; max-width: 1250px; }
-        .header { border-bottom: 2px solid #eee; margin-bottom: 20px; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .main { display: grid; grid-template-columns: 350px 1fr; gap: 25px; }
-        @media (max-width: 950px) { .main { grid-template-columns: 1fr; } }
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: white; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 350px; background: #252525; padding: 20px; display: flex; flex-direction: column; border-right: 1px solid #333; }
+        .editor { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; background: #000; overflow: auto; }
         
-        textarea { width: 100%; height: 250px; border: 1px solid #ddd; border-radius: 12px; padding: 12px; font-family: 'Fira Code', monospace; font-size: 12px; box-sizing: border-box; background: #fafafa; }
-        .btn { background: var(--qwen-blue); color: white; border: none; padding: 14px; border-radius: 10px; cursor: pointer; font-weight: 600; width: 100%; margin-top: 10px; font-size: 15px; }
-        .btn-demo { background: #34c759; width: auto; }
+        h2 { margin-top: 0; color: #5e5ce6; font-size: 18px; }
+        p { font-size: 13px; color: #aaa; }
         
-        .preview-area { background: #1a1a1a; border-radius: 15px; position: relative; min-height: 500px; display: flex; align-items: flex-start; justify-content: center; padding: 15px; border: 4px solid #fff; box-shadow: inset 0 0 50px rgba(0,0,0,0.2); }
-        #wrapper { position: relative; display: inline-block; }
-        #view { display: block; max-width: 100%; height: auto; border-radius: 8px; }
-        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        #qwenCode { width: 100%; flex: 1; background: #111; color: #0f0; border: 1px solid #333; padding: 10px; font-family: monospace; font-size: 12px; margin-top: 10px; border-radius: 8px; }
         
-        .status-bar { margin-top: 15px; padding: 10px; background: #f0f0f5; border-radius: 8px; font-size: 13px; color: #444; border-left: 4px solid var(--qwen-blue); }
+        .btn { background: #5e5ce6; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
+        .btn-clear { background: #ff3b30; }
+        
+        #container { position: relative; cursor: crosshair; }
+        img { display: block; max-width: 90vw; max-height: 90vh; user-select: none; -webkit-user-drag: none; }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        
+        .instr { background: #333; padding: 10px; border-radius: 8px; margin-bottom: 20px; font-size: 12px; }
     </style>
 </head>
 <body>
 
-<div class="app-card">
-    <div class="header">
-        <h1 style="margin:0">👁️ Qwen-VL Visual Grounding</h1>
-        <button class="btn btn-demo" onclick="loadFullDemo()">Charger Démo Multi-Calques ✨</button>
+<div class="sidebar">
+    <h2>👁️ Qwen Studio</h2>
+    <div class="instr">
+        1. Charge ton affiche.<br>
+        2. <b>Dessine avec ta souris</b> sur l'image pour créer un calque.<br>
+        3. Copie le code généré ci-dessous.
     </div>
 
-    <div class="main">
-        <div class="sidebar">
-            <label style="font-weight:bold">1. Image de la scène</label>
-            <input type="file" id="imgFile" accept="image/*" style="margin-bottom:20px; width:100%">
-            
-            <label style="font-weight:bold">2. Réponse brute de Qwen (Multi-balises)</label>
-            <textarea id="qwenText" placeholder="Collez ici le texte contenant les balises <ref>, <box>, <polygon> ou <point>..."></textarea>
-            
-            <button class="btn" onclick="processAll()">Générer tous les calques 🚀</button>
-            <div id="log" class="status-bar">Prêt pour l'analyse.</div>
-        </div>
+    <label>Charger ton affiche :</label>
+    <input type="file" id="imgInput" accept="image/*" style="margin: 10px 0 20px 0;">
 
-        <div class="preview-area">
-            <div id="wrapper">
-                <img id="view" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
-                <canvas id="ovl"></canvas>
-            </div>
-        </div>
+    <label>Nom de l'objet :</label>
+    <input type="text" id="labelName" placeholder="Ex: Titre, Enfant..." style="padding: 8px; border-radius: 5px; border: none; margin-bottom: 10px;">
+
+    <button class="btn btn-clear" onclick="clearAll()">Tout effacer</button>
+    
+    <label>Code Qwen généré :</label>
+    <textarea id="qwenCode" readonly></textarea>
+    
+    <p style="margin-top:20px;">Utilise ce code pour ta présentation ou pour simuler la réponse de l'IA.</p>
+</div>
+
+<div class="editor">
+    <div id="container">
+        <img id="source" src="">
+        <canvas id="canvas"></canvas>
     </div>
 </div>
 
 <script>
-    const image = document.getElementById('view');
-    const canvas = document.getElementById('ovl');
+    const img = document.getElementById('source');
+    const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    const log = document.getElementById('log');
+    const qwenCode = document.getElementById('qwenCode');
+    const labelInput = document.getElementById('labelName');
 
-    // Palette étendue type Qwen/Alibaba
-    const palette = [
-        {f: 'rgba(255, 59, 48, 0.4)', s: '#ff3b30'}, // Rouge
-        {f: 'rgba(52, 199, 89, 0.4)', s: '#34c759'}, // Vert
-        {f: 'rgba(0, 122, 255, 0.4)', s: '#007aff'}, // Bleu
-        {f: 'rgba(255, 149, 0, 0.4)', s: '#ff9500'}, // Orange
-        {f: 'rgba(175, 82, 222, 0.4)', s: '#af52de'}, // Violet
-        {f: 'rgba(255, 45, 85, 0.4)', s: '#ff2d55'}, // Rose
-        {f: 'rgba(88, 86, 214, 0.4)', s: '#5856d6'}, // Indigo
-        {f: 'rgba(255, 204, 0, 0.4)', s: '#ffcc00'}, // Jaune
-        {f: 'rgba(90, 200, 250, 0.4)', s: '#5ac8fa'}, // Cyan
-        {f: 'rgba(162, 132, 94, 0.4)', s: '#a2845e'}  // Brun
-    ];
+    let startX, startY, isDrawing = false;
+    let shapes = [];
 
-    function loadFullDemo() {
-        image.src = "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=1000"; // Image Casque & Laptop
-        document.getElementById('qwenText').value = 
-            '<ref>Casque Audio</ref><polygon>(200,450,220,550,400,600,550,550,550,400,400,350)</polygon>\n' +
-            '<ref>Ordinateur</ref><box>(400,100,900,900)</box>\n' +
-            '<ref>Bouton Power</ref><point>(450,520)</point>\n' +
-            '<ref>Logo</ref><point>(350,480)</point>';
-        image.onload = () => { processAll(); };
-        log.innerText = "Démo multi-objets chargée.";
-    }
-
-    document.getElementById('imgFile').onchange = (e) => {
+    document.getElementById('imgInput').onchange = (e) => {
         const reader = new FileReader();
-        reader.onload = (ev) => { image.src = ev.target.result; log.innerText = "Image utilisateur chargée."; };
+        reader.onload = (ev) => { 
+            img.src = ev.target.result;
+            img.onload = () => {
+                canvas.width = img.clientWidth;
+                canvas.height = img.clientHeight;
+                shapes = [];
+                updateCode();
+            };
+        };
         reader.readAsDataURL(e.target.files[0]);
     };
 
-    function processAll() {
-        if (!image.naturalWidth) return;
-        canvas.width = image.naturalWidth;
-        canvas.height = image.naturalHeight;
+    canvas.onmousedown = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        startX = e.clientX - rect.left;
+        startY = e.clientY - rect.top;
+        isDrawing = true;
+    };
+
+    canvas.onmousemove = (e) => {
+        if (!isDrawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const curX = e.clientX - rect.left;
+        const curY = e.clientY - rect.top;
+        
+        drawAll();
+        ctx.strokeStyle = '#5e5ce6';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(startX, startY, curX - startX, curY - startY);
+    };
+
+    canvas.onmouseup = (e) => {
+        if (!isDrawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const endX = e.clientX - rect.left;
+        const endY = e.clientY - rect.top;
+        isDrawing = false;
+
+        const label = labelInput.value || "Objet_" + (shapes.length + 1);
+        
+        // Sauvegarder la forme en coordonnées 0-1000 (Format Qwen)
+        const ymin = Math.round((Math.min(startY, endY) / canvas.height) * 1000);
+        const xmin = Math.round((Math.min(startX, endX) / canvas.width) * 1000);
+        const ymax = Math.round((Math.max(startY, endY) / canvas.height) * 1000);
+        const xmax = Math.round((Math.max(startX, endX) / canvas.width) * 1000);
+
+        shapes.push({ label, box: [ymin, xmin, ymax, xmax], px: [startX, startY, endX, endY] });
+        updateCode();
+        drawAll();
+    };
+
+    function drawAll() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        const text = document.getElementById('qwenText').value;
-        const w = canvas.width; const h = canvas.height;
-        
-        // Regex globale pour attraper TOUTES les balises Qwen
-        const masterRegex = /<ref>(.*?)<\/ref>\s*<(box|polygon|point)>\((.*?)\)<\/\2>/g;
-        let m, count = 0;
+        shapes.forEach((s, i) => {
+            const x = Math.min(s.px[0], s.px[2]);
+            const y = Math.min(s.px[1], s.px[3]);
+            const w = Math.abs(s.px[2] - s.px[0]);
+            const h = Math.abs(s.px[3] - s.px[1]);
 
-        while ((m = masterRegex.exec(text)) !== null) {
-            const label = m[1];
-            const type = m[2];
-            const coords = m[3].split(',').map(Number);
-            const style = palette[count % palette.length];
-
-            ctx.beginPath();
-            ctx.fillStyle = style.f;
-            ctx.strokeStyle = style.s;
-            ctx.lineWidth = Math.max(4, w / 250);
-
-            if (type === 'box') {
-                const [y1, x1, y2, x2] = coords.map((v, k) => k%2===0 ? v*h/1000 : v*w/1000);
-                ctx.rect(x1, y1, x2-x1, y2-y1);
-                drawTag(label, x1, y1, style.s);
-            } 
-            else if (type === 'polygon') {
-                ctx.moveTo(coords[1]*w/1000, coords[0]*h/1000);
-                for (let j=0; j<coords.length; j+=2) ctx.lineTo(coords[j+1]*w/1000, coords[j]*h/1000);
-                ctx.closePath();
-                drawTag(label, coords[1]*w/1000, coords[0]*h/1000, style.s);
-            }
-            else if (type === 'point') {
-                const py = coords[0]*h/1000; const px = coords[1]*w/1000;
-                ctx.arc(px, py, Math.max(10, w/80), 0, Math.PI*2);
-                drawTag(label, px, py, style.s);
-            }
-
-            ctx.fill();
-            ctx.stroke();
-            count++;
-        }
-        log.innerText = `Analyse terminée : ${count} objets identifiés.`;
+            ctx.fillStyle = 'rgba(94, 92, 230, 0.3)';
+            ctx.fillRect(x, y, w, h);
+            ctx.strokeStyle = '#5e5ce6';
+            ctx.strokeRect(x, y, w, h);
+            
+            ctx.fillStyle = '#5e5ce6';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText(s.label, x, y - 5);
+        });
     }
 
-    function drawTag(txt, x, y, color) {
-        const size = Math.max(16, canvas.width/45);
-        ctx.font = `bold ${size}px sans-serif`;
-        const tw = ctx.measureText(txt).width + 20;
-        const th = size * 1.5;
-        ctx.fillStyle = color;
-        ctx.roundRect(x, y - th - 5, tw, th, 8); // Coins arrondis style Qwen
-        ctx.fill();
-        ctx.fillStyle = "white";
-        ctx.fillText(txt, x + 10, y - th/2.5);
+    function updateCode() {
+        let code = "";
+        shapes.forEach(s => {
+            code += `<ref>${s.label}</ref><box>(${s.box[0]},${s.box[1]},${s.box[2]},${s.box[3]})</box>\n`;
+        });
+        qwenCode.value = code;
+    }
+
+    function clearAll() {
+        shapes = [];
+        updateCode();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 </script>
 
