@@ -37,4 +37,136 @@
 
     <button class="btn btn-draw" onclick="mode = 'draw'; drawAll();">🖊️ Mode Dessin</button>
     <button class="btn btn-present" onclick="mode = 'present'; drawAll();">✨ MODE PRÉSENTATION</button>
-    <button class="btn
+    <button class="btn btn-clear" onclick="clearAll()">Effacer tout</button>
+    
+    <label>Code Qwen généré :</label>
+    <textarea id="qwenCode" readonly></textarea>
+</div>
+
+<div class="editor">
+    <div id="container">
+        <img id="source" src="">
+        <canvas id="canvas"></canvas>
+    </div>
+</div>
+
+<script>
+    const img = document.getElementById('source');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const labelInput = document.getElementById('labelName');
+    const qwenCode = document.getElementById('qwenCode');
+
+    let startX, startY, isDrawing = false;
+    let shapes = [];
+    let mode = 'draw'; // 'draw' ou 'present'
+
+    const palette = ['#ff3b30', '#34c759', '#007aff', '#ff9500', '#af52de', '#ff2d55', '#ffcc00'];
+
+    document.getElementById('imgInput').onchange = (e) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => { 
+            img.src = ev.target.result;
+            img.onload = () => {
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                shapes = [];
+                drawAll();
+            };
+        };
+        reader.readAsDataURL(e.target.files[0]);
+    };
+
+    canvas.onmousedown = (e) => {
+        if (mode !== 'draw') return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        startX = (e.clientX - rect.left) * scaleX;
+        startY = (e.clientY - rect.top) * scaleY;
+        isDrawing = true;
+    };
+
+    canvas.onmousemove = (e) => {
+        if (!isDrawing || mode !== 'draw') return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const curX = (e.clientX - rect.left) * scaleX;
+        const curY = (e.clientY - rect.top) * scaleY;
+        
+        drawAll();
+        ctx.strokeStyle = 'white';
+        ctx.setLineDash([5, 5]);
+        ctx.strokeRect(startX, startY, curX - startX, curY - startY);
+    };
+
+    canvas.onmouseup = (e) => {
+        if (!isDrawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const endX = (e.clientX - rect.left) * scaleX;
+        const endY = (e.clientY - rect.top) * scaleY;
+        isDrawing = false;
+
+        const ymin = Math.round((Math.min(startY, endY) / canvas.height) * 1000);
+        const xmin = Math.round((Math.min(startX, endX) / canvas.width) * 1000);
+        const ymax = Math.round((Math.max(startY, endY) / canvas.height) * 1000);
+        const xmax = Math.round((Math.max(startX, endX) / canvas.width) * 1000);
+
+        shapes.push({ 
+            label: labelInput.value || "Objet_" + (shapes.length + 1), 
+            box: [ymin, xmin, ymax, xmax] 
+        });
+        labelInput.value = "";
+        updateCode();
+        drawAll();
+    };
+
+    function drawAll() {
+        ctx.setLineDash([]);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        shapes.forEach((s, i) => {
+            const y1 = s.box[0] * canvas.height / 1000;
+            const x1 = s.box[1] * canvas.width / 1000;
+            const y2 = s.box[2] * canvas.height / 1000;
+            const x2 = s.box[3] * canvas.width / 1000;
+            const color = palette[i % palette.length];
+
+            if (mode === 'draw') {
+                ctx.strokeStyle = '#5e5ce6';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                ctx.fillStyle = '#5e5ce6';
+                ctx.font = '14px Arial';
+                ctx.fillText(s.label, x1, y1 - 5);
+            } else {
+                // STYLE PRÉSENTATION QWEN
+                ctx.fillStyle = color + '66'; // 40% opacité
+                ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = Math.max(4, canvas.width/200);
+                ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                
+                // Label stylé
+                ctx.font = `bold ${Math.max(16, canvas.width/45)}px sans-serif`;
+                const tw = ctx.measureText(s.label).width + 20;
+                const th = Math.max(25, canvas.width/30);
+                ctx.fillStyle = color;
+                ctx.fillRect(x1, y1 - th, tw, th);
+                ctx.fillStyle = "white";
+                ctx.fillText(s.label, x1 + 10, y1 - th/4);
+            }
+        });
+    }
+
+    function updateCode() {
+        qwenCode.value = shapes.map(s => `<ref>${s.label}</ref><box>(${s.box.join(',')})</box>`).join('\n');
+    }
+
+    function clearAll() { shapes = []; updateCode(); drawAll(); }
+</script>
+</body>
+</html>
