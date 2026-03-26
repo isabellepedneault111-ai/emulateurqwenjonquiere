@@ -4,153 +4,141 @@
     <meta charset="UTF-8">
     <title>Qwen-VL Visualizer | Projet Académique</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 40px; margin: 0; }
-        .app-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); width: 100%; max-width: 1200px; }
-        .header { border-bottom: 2px solid #eee; margin-bottom: 25px; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .main { display: grid; grid-template-columns: 350px 1fr; gap: 30px; }
-        @media (max-width: 900px) { .main { grid-template-columns: 1fr; } }
-        label { display: block; margin-bottom: 8px; font-weight: bold; color: #444; }
-        textarea { width: 100%; height: 180px; border: 1px solid #ddd; border-radius: 10px; padding: 12px; font-family: monospace; box-sizing: border-box; font-size: 13px; }
-        .btn { background: #007aff; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; margin-top: 10px; transition: background 0.3s; }
-        .btn:hover { background: #0056b3; }
-        .btn-secondary { background: #5856d6; }
-        .btn-download { background: #34c759; margin-top: 20px; }
-        .preview-area { background: #fafafa; border: 2px dashed #ccc; border-radius: 15px; position: relative; min-height: 500px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        #canvas-container { position: relative; display: inline-block; line-height: 0; }
-        canvas { position: absolute; top: 0; left: 0; pointer-events: none; width: 100%; height: 100%; }
-        img { max-width: 100%; height: auto; display: block; border-radius: 5px; }
-        #placeholderText { color: #888; font-style: italic; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .app-card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 1100px; }
+        .header { border-bottom: 2px solid #eee; margin-bottom: 20px; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .main { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
+        @media (max-width: 850px) { .main { grid-template-columns: 1fr; } }
+        
+        textarea { width: 100%; height: 150px; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-family: monospace; font-size: 12px; box-sizing: border-box; }
+        .btn { background: #007aff; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; margin-top: 10px; }
+        .btn-demo { background: #5856d6; width: auto; }
+        
+        /* Conteneur Critique pour l'affichage */
+        .preview-area { background: #333; border-radius: 10px; position: relative; min-height: 400px; display: flex; align-items: flex-start; justify-content: center; padding: 10px; }
+        #wrapper { position: relative; display: inline-block; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        img { display: block; max-width: 100%; height: auto; border-radius: 4px; }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        
+        .status { font-size: 12px; color: #666; margin-top: 10px; padding: 8px; background: #eef; border-radius: 5px; }
     </style>
 </head>
 <body>
 
 <div class="app-card">
     <div class="header">
-        <div>
-            <h1 style="margin:0; color:#1d1d1f;">Qwen-VL Emulator</h1>
-            <small style="color:#888;">Visualisation des couches sémantiques (Bounding Boxes & Segmentation)</small>
-        </div>
-        <button class="btn btn-secondary" style="width:auto;" onclick="loadDemo()">Charger Démo ✨</button>
+        <h1>Qwen-VL Emulator</h1>
+        <button class="btn btn-demo" onclick="loadDemo()">Charger la Démo ✨</button>
     </div>
 
     <div class="main">
-        <div class="inputs">
-            <label>1. Choisir une Image</label>
-            <input type="file" id="imgLoad" accept="image/*" style="margin-bottom:20px;">
+        <div class="sidebar">
+            <label style="font-weight:bold">1. Image</label>
+            <input type="file" id="imgFile" accept="image/*" style="margin-bottom:15px; width:100%">
             
-            <label>2. Texte de Qwen (Format &lt;ref&gt;)</label>
-            <textarea id="qwenInput" placeholder="<ref>objet</ref><box>(y1,x1,y2,x2)</box>"></textarea>
+            <label style="font-weight:bold">2. Code Qwen</label>
+            <textarea id="qwenText" placeholder="Collez le texte ici..."></textarea>
             
-            <button class="btn" onclick="draw()">Appliquer les Calques 👁️</button>
-            <button id="dlBtn" class="btn btn-download" style="display:none;" onclick="download()">Télécharger le résultat 📥</button>
+            <button class="btn" onclick="process()">Appliquer les Calques 👁️</button>
+            <div id="log" class="status">En attente d'image...</div>
         </div>
 
         <div class="preview-area">
-            <div id="canvas-container">
-                <img id="baseImg" src="">
+            <div id="wrapper">
+                <img id="view" src="" style="display:none">
                 <canvas id="ovl"></canvas>
             </div>
-            <p id="placeholderText">Aucune image chargée</p>
         </div>
     </div>
 </div>
 
 <script>
-    const img = document.getElementById('baseImg');
-    const cvs = document.getElementById('ovl');
-    const ctx = cvs.getContext('2d');
-    const qwenInput = document.getElementById('qwenInput');
+    const image = document.getElementById('view');
+    const canvas = document.getElementById('ovl');
+    const ctx = canvas.getContext('2d');
+    const log = document.getElementById('log');
 
-    // Démo automatique
+    // Charger la démo
     function loadDemo() {
-        document.getElementById('placeholderText').style.display = 'none';
-        img.src = "https://images.unsplash.com/photo-1517336712642-19e09961446a?w=800";
-        qwenInput.value = '<ref>Ordinateur Portable</ref><box>(280,250,720,750)</box>\n<ref>Tasse à café</ref><polygon>(650,100,650,220,850,220,850,100)</polygon>';
-        img.onload = function() { 
-            syncSize(); 
-            draw(); 
-        };
+        image.crossOrigin = "anonymous"; // Évite les erreurs de sécurité
+        image.src = "https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?w=1000"; 
+        document.getElementById('qwenText').value = '<ref>Ordinateur</ref><box>(200,150,750,850)</box>\n<ref>Tasse</ref><polygon>(600,50,600,250,850,250,850,50)</polygon>';
+        image.style.display = 'block';
+        log.innerText = "Démo chargée. Cliquez sur 'Appliquer'.";
     }
 
-    // Chargement image utilisateur
-    document.getElementById('imgLoad').onchange = function(e) {
+    // Charger fichier local
+    document.getElementById('imgFile').onchange = (e) => {
         const reader = new FileReader();
-        reader.onload = function(ev) { 
-            img.src = ev.target.result; 
-            document.getElementById('placeholderText').style.display = 'none';
+        reader.onload = (ev) => { 
+            image.src = ev.target.result; 
+            image.style.display = 'block';
+            log.innerText = "Image prête.";
         };
         reader.readAsDataURL(e.target.files[0]);
     };
 
-    img.onload = syncSize;
-
-    function syncSize() {
-        cvs.width = img.naturalWidth;
-        cvs.height = img.naturalHeight;
-    }
-
-    function draw() {
-        if (!img.src || img.src.includes('undefined')) return;
+    function process() {
+        if (!image.src) { alert("Chargez une image d'abord !"); return; }
         
-        const text = qwenInput.value;
-        const w = cvs.width; 
-        const h = cvs.height;
-        ctx.clearRect(0, 0, w, h);
+        // 1. Aligner le canvas sur la taille RÉELLE de l'image
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
         
-        const colors = ['rgba(255,50,50,0.4)', 'rgba(50,255,50,0.4)', 'rgba(50,100,255,0.4)'];
-        const strokes = ['#ff3232', '#32ff32', '#3264ff'];
+        const text = document.getElementById('qwenText').value;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Regex plus flexible (ignore les espaces)
+        const regex = /<ref>(.*?)<\/ref>\s*<(box|polygon)>\((.*?)\)<\/\2>/g;
+        let match;
+        let count = 0;
 
-        const reg = /<ref>(.*?)<\/ref>\s*<(box|polygon)>\((.*?)\)<\/\2>/g;
-        let m, i = 0;
-        
-        while ((m = reg.exec(text)) !== null) {
-            const label = m[1];
-            const type = m[2];
-            const coords = m[3].split(',').map(Number);
-            const color = colors[i % 3];
-            const stroke = strokes[i % 3];
+        const colors = ['rgba(255,50,50,0.5)', 'rgba(50,255,50,0.5)', 'rgba(50,150,255,0.5)'];
+        const borders = ['#ff0000', '#00ff00', '#0066ff'];
+
+        while ((match = regex.exec(text)) !== null) {
+            const label = match[1];
+            const type = match[2];
+            const coords = match[3].split(',').map(Number);
+            const col = colors[count % 3];
+            const brd = borders[count % 3];
 
             ctx.beginPath();
-            if(type === 'box') {
-                const [y1, x1, y2, x2] = coords.map((v, k) => k % 2 === 0 ? v * h / 1000 : v * w / 1000);
+            if (type === 'box') {
+                // Qwen: ymin, xmin, ymax, xmax
+                const y1 = coords[0] * canvas.height / 1000;
+                const x1 = coords[1] * canvas.width / 1000;
+                const y2 = coords[2] * canvas.height / 1000;
+                const x2 = coords[3] * canvas.width / 1000;
                 ctx.rect(x1, y1, x2 - x1, y2 - y1);
-                labelAt(label, x1, y1, stroke);
+                drawLabel(label, x1, y1, brd);
             } else {
-                ctx.moveTo(coords[1] * w / 1000, coords[0] * h / 1000);
-                for(let j = 0; j < coords.length; j += 2) {
-                    ctx.lineTo(coords[j+1] * w / 1000, coords[j] * h / 1000);
+                ctx.moveTo(coords[1] * canvas.width / 1000, coords[0] * canvas.height / 1000);
+                for (let j = 0; j < coords.length; j += 2) {
+                    ctx.lineTo(coords[j+1] * canvas.width / 1000, coords[j] * canvas.height / 1000);
                 }
                 ctx.closePath();
-                labelAt(label, coords[1] * w / 1000, coords[0] * h / 1000, stroke);
+                drawLabel(label, coords[1] * canvas.width / 1000, coords[0] * canvas.height / 1000, brd);
             }
-            ctx.fillStyle = color; ctx.fill();
-            ctx.strokeStyle = stroke; ctx.lineWidth = Math.max(3, w/200); ctx.stroke();
-            i++;
+
+            ctx.fillStyle = col;
+            ctx.fill();
+            ctx.strokeStyle = brd;
+            ctx.lineWidth = Math.max(4, canvas.width / 200);
+            ctx.stroke();
+            count++;
         }
-        document.getElementById('dlBtn').style.display = 'block';
+        log.innerText = count + " calques appliqués avec succès !";
     }
 
-    function labelAt(txt, x, y, c) {
-        ctx.font = `bold ${Math.max(14, cvs.width/40)}px sans-serif`;
-        const tw = ctx.measureText(txt).width;
-        const th = Math.max(20, cvs.width/30);
-        ctx.fillStyle = c;
-        ctx.fillRect(x, y - th, tw + 20, th);
+    function drawLabel(txt, x, y, color) {
+        ctx.font = `bold ${Math.max(16, canvas.width/40)}px sans-serif`;
+        const w = ctx.measureText(txt).width + 20;
+        const h = Math.max(30, canvas.width/25);
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y - h, w, h);
         ctx.fillStyle = "white";
-        ctx.fillText(txt, x + 10, y - th/4);
-    }
-
-    function download() {
-        const finalCvs = document.createElement('canvas');
-        finalCvs.width = img.naturalWidth;
-        finalCvs.height = img.naturalHeight;
-        const fctx = finalCvs.getContext('2d');
-        fctx.drawImage(img, 0, 0);
-        fctx.drawImage(cvs, 0, 0);
-        const link = document.createElement('a');
-        link.download = 'export_qwen.png';
-        link.href = finalCvs.toDataURL('image/png');
-        link.click();
+        ctx.fillText(txt, x + 10, y - (h/4));
     }
 </script>
 
