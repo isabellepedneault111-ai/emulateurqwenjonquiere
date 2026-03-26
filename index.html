@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -10,15 +11,15 @@
         .main { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
         @media (max-width: 850px) { .main { grid-template-columns: 1fr; } }
         
-        textarea { width: 100%; height: 150px; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-family: monospace; font-size: 12px; box-sizing: border-box; }
+        textarea { width: 100%; height: 180px; border: 1px solid #ccc; border-radius: 8px; padding: 10px; font-family: monospace; font-size: 12px; box-sizing: border-box; }
         .btn { background: #007aff; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; margin-top: 10px; }
         .btn-demo { background: #5856d6; width: auto; }
         
-        /* Conteneur Critique pour l'affichage */
-        .preview-area { background: #333; border-radius: 10px; position: relative; min-height: 400px; display: flex; align-items: flex-start; justify-content: center; padding: 10px; }
-        #wrapper { position: relative; display: inline-block; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        img { display: block; max-width: 100%; height: auto; border-radius: 4px; }
-        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        /* Zone de prévisualisation */
+        .preview-area { background: #333; border-radius: 10px; position: relative; min-height: 500px; display: flex; align-items: flex-start; justify-content: center; padding: 10px; border: 2px solid #ddd; }
+        #wrapper { position: relative; display: inline-block; }
+        #view { display: block; max-width: 100%; height: auto; border-radius: 4px; border: 1px solid white; }
+        canvas { position: absolute; top: 0; left: 0; pointer-events: none; width: 100%; height: 100%; }
         
         .status { font-size: 12px; color: #666; margin-top: 10px; padding: 8px; background: #eef; border-radius: 5px; }
     </style>
@@ -33,10 +34,10 @@
 
     <div class="main">
         <div class="sidebar">
-            <label style="font-weight:bold">1. Image</label>
+            <label style="font-weight:bold">1. Choisir une Image</label>
             <input type="file" id="imgFile" accept="image/*" style="margin-bottom:15px; width:100%">
             
-            <label style="font-weight:bold">2. Code Qwen</label>
+            <label style="font-weight:bold">2. Texte de Qwen</label>
             <textarea id="qwenText" placeholder="Collez le texte ici..."></textarea>
             
             <button class="btn" onclick="process()">Appliquer les Calques 👁️</button>
@@ -45,7 +46,7 @@
 
         <div class="preview-area">
             <div id="wrapper">
-                <img id="view" src="" style="display:none">
+                <img id="view" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
                 <canvas id="ovl"></canvas>
             </div>
         </div>
@@ -58,54 +59,55 @@
     const ctx = canvas.getContext('2d');
     const log = document.getElementById('log');
 
-    // Charger la démo
+    // Charger la démo (Correction : on utilise une image qui accepte le CORS)
     function loadDemo() {
-        image.crossOrigin = "anonymous"; // Évite les erreurs de sécurité
-        image.src = "https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?w=1000"; 
-        document.getElementById('qwenText').value = '<ref>Ordinateur</ref><box>(200,150,750,850)</box>\n<ref>Tasse</ref><polygon>(600,50,600,250,850,250,850,50)</polygon>';
-        image.style.display = 'block';
+        image.src = "https://picsum.photos/id/1/800/600"; 
+        document.getElementById('qwenText').value = '<ref>Ordinateur</ref><box>(200,150,750,850)</box>\n<ref>Clavier</ref><polygon>(800,200,800,800,950,800,950,200)</polygon>';
         log.innerText = "Démo chargée. Cliquez sur 'Appliquer'.";
     }
 
-    // Charger fichier local
+    // Charger fichier local (Lecture simplifiée)
     document.getElementById('imgFile').onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
         const reader = new FileReader();
         reader.onload = (ev) => { 
             image.src = ev.target.result; 
-            image.style.display = 'block';
-            log.innerText = "Image prête.";
+            log.innerText = "Image chargée avec succès.";
         };
-        reader.readAsDataURL(e.target.files[0]);
+        reader.readAsDataURL(file);
     };
 
     function process() {
-        if (!image.src) { alert("Chargez une image d'abord !"); return; }
+        if (!image.naturalWidth || image.naturalWidth === 0) {
+            alert("L'image n'est pas encore chargée ou est invalide.");
+            return;
+        }
         
-        // 1. Aligner le canvas sur la taille RÉELLE de l'image
+        // Aligner le canvas sur la taille réelle de l'image
         canvas.width = image.naturalWidth;
         canvas.height = image.naturalHeight;
         
         const text = document.getElementById('qwenText').value;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // Regex plus flexible (ignore les espaces)
         const regex = /<ref>(.*?)<\/ref>\s*<(box|polygon)>\((.*?)\)<\/\2>/g;
         let match;
         let count = 0;
 
-        const colors = ['rgba(255,50,50,0.5)', 'rgba(50,255,50,0.5)', 'rgba(50,150,255,0.5)'];
+        const colors = ['rgba(255, 50, 50, 0.5)', 'rgba(50, 255, 50, 0.5)', 'rgba(50, 150, 255, 0.5)'];
         const borders = ['#ff0000', '#00ff00', '#0066ff'];
 
         while ((match = regex.exec(text)) !== null) {
             const label = match[1];
             const type = match[2];
             const coords = match[3].split(',').map(Number);
-            const col = colors[count % 3];
-            const brd = borders[count % 3];
+            const col = colors[count % colors.length];
+            const brd = borders[count % borders.length];
 
             ctx.beginPath();
             if (type === 'box') {
-                // Qwen: ymin, xmin, ymax, xmax
                 const y1 = coords[0] * canvas.height / 1000;
                 const x1 = coords[1] * canvas.width / 1000;
                 const y2 = coords[2] * canvas.height / 1000;
@@ -124,21 +126,22 @@
             ctx.fillStyle = col;
             ctx.fill();
             ctx.strokeStyle = brd;
-            ctx.lineWidth = Math.max(4, canvas.width / 200);
+            ctx.lineWidth = Math.max(5, canvas.width / 150);
             ctx.stroke();
             count++;
         }
-        log.innerText = count + " calques appliqués avec succès !";
+        log.innerText = count + " calques appliqués !";
     }
 
     function drawLabel(txt, x, y, color) {
-        ctx.font = `bold ${Math.max(16, canvas.width/40)}px sans-serif`;
-        const w = ctx.measureText(txt).width + 20;
-        const h = Math.max(30, canvas.width/25);
+        const fontSize = Math.max(18, canvas.width/35);
+        ctx.font = `bold ${fontSize}px sans-serif`;
+        const tw = ctx.measureText(txt).width + 20;
+        const th = fontSize * 1.4;
         ctx.fillStyle = color;
-        ctx.fillRect(x, y - h, w, h);
+        ctx.fillRect(x, y - th, tw, th);
         ctx.fillStyle = "white";
-        ctx.fillText(txt, x + 10, y - (h/4));
+        ctx.fillText(txt, x + 10, y - (th/4));
     }
 </script>
 
