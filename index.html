@@ -11,7 +11,7 @@
         #qwenCode { width: 100%; height: 120px; background: #111; color: #0f0; border: 1px solid #333; padding: 10px; font-family: monospace; font-size: 11px; margin-top: 10px; border-radius: 8px; }
         .btn { border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px; width: 100%; color: white; transition: 0.3s; }
         .btn-draw { background: #5e5ce6; }
-        .btn-present { background: #34c759; border: 2px solid #fff; }
+        .btn-present { background: #34c759; border: 2px solid #fff; } /* LE BOUTON VERT */
         .btn-clear { background: #ff3b30; }
         #container { position: relative; cursor: crosshair; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         img { display: block; max-width: 90vw; max-height: 90vh; pointer-events: none; }
@@ -27,7 +27,7 @@
         1. Charge ton affiche.<br>
         2. Donne un nom (ex: Titre).<br>
         3. <b>Dessine à la souris</b>.<br>
-        4. Clique sur <b>Mode Présentation</b> !
+        4. Clique sur le bouton vert !
     </div>
 
     <input type="file" id="imgInput" accept="image/*" style="margin-bottom: 15px;">
@@ -59,7 +59,7 @@
 
     let startX, startY, isDrawing = false;
     let shapes = [];
-    let mode = 'draw'; // 'draw' ou 'present'
+    let mode = 'draw'; 
 
     const palette = ['#ff3b30', '#34c759', '#007aff', '#ff9500', '#af52de', '#ff2d55', '#ffcc00'];
 
@@ -143,14 +143,12 @@
                 ctx.font = '14px Arial';
                 ctx.fillText(s.label, x1, y1 - 5);
             } else {
-                // STYLE PRÉSENTATION QWEN
-                ctx.fillStyle = color + '66'; // 40% opacité
+                ctx.fillStyle = color + '66'; 
                 ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
                 ctx.strokeStyle = color;
                 ctx.lineWidth = Math.max(4, canvas.width/200);
                 ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
                 
-                // Label stylé
                 ctx.font = `bold ${Math.max(16, canvas.width/45)}px sans-serif`;
                 const tw = ctx.measureText(s.label).width + 20;
                 const th = Math.max(25, canvas.width/30);
