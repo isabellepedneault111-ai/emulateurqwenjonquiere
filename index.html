@@ -1,0 +1,155 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.6">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="fr"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;Qwen-VL Visualizer | Projet Académique&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 40px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.app-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); width: 100%; max-width: 1200px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.header { border-bottom: 2px solid #eee; margin-bottom: 25px; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.main { display: grid; grid-template-columns: 350px 1fr; gap: 30px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>label { display: block; margin-bottom: 8px; font-weight: bold; color: #444; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>textarea { width: 100%; height: 180px; border: 1px solid #ddd; border-radius: 10px; padding: 12px; font-family: monospace; box-sizing: border-box; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.btn { background: #007aff; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; margin-top: 10px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.btn-secondary { background: #5856d6; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.btn-download { background: #34c759; margin-top: 20px; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.preview-area { background: #fafafa; border: 2px dashed #ccc; border-radius: 15px; position: relative; min-height: 500px; display: flex; align-items: center; justify-content: center; overflow: hidden; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>#canvas-container { position: relative; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>canvas { position: absolute; top: 0; left: 0; pointer-events: none; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>img { max-width: 100%; height: auto; display: block; border-radius: 5px; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;div class="app-card"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="header"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;h1 style="margin:0; color:#1d1d1f;"&gt;Qwen-VL Emulator&lt;/h1&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;small style="color:#888;"&gt;Outil de visualisation de couches sémantiques IA&lt;/small&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button class="btn btn-secondary" style="width:auto;" onclick="loadDemo()"&gt;Charger Démo&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div class="main"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="inputs"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;label&gt;Image Source&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;input type="file" id="imgLoad" accept="image/*" style="margin-bottom:20px;"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;label&gt;Output Text (Format Qwen)&lt;/label&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;textarea id="qwenInput" placeholder="&lt;ref&gt;objet&lt;/ref&gt;&lt;box&gt;(...)&lt;/box&gt;"&gt;&lt;/textarea&gt;</p>
+<p class="p2"><span class="Apple-converted-space">            </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;button class="btn" onclick="draw()"&gt;Appliquer les Calques&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;button id="dlBtn" class="btn btn-download" style="display:none;" onclick="download()"&gt;Télécharger l'Image&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;div class="preview-area" id="dropZone"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;div id="canvas-container"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;img id="baseImg" src=""&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;canvas id="ovl"&gt;&lt;/canvas&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>&lt;p id="placeholderText"&gt;Glissez une image ici ou utilisez la démo&lt;/p&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p1">&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const img = document.getElementById('baseImg');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const cvs = document.getElementById('ovl');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const ctx = cvs.getContext('2d');</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>function loadDemo() {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('placeholderText').style.display = 'none';</p>
+<p class="p1"><span class="Apple-converted-space">        </span>img.src = "https://images.unsplash.com/photo-1517336712642-19e09961446a?w=800";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('qwenInput').value = '&lt;ref&gt;Ordinateur Portable&lt;/ref&gt;&lt;box&gt;(280,250,720,750)&lt;/box&gt;\n&lt;ref&gt;Tasse à café&lt;/ref&gt;&lt;polygon&gt;(650,100,650,220,850,220,850,100)&lt;/polygon&gt;';</p>
+<p class="p1"><span class="Apple-converted-space">        </span>img.onload = () =&gt; { syncSize(); draw(); };</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>document.getElementById('imgLoad').onchange = (e) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const reader = new FileReader();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>reader.onload = (ev) =&gt; {<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>img.src = ev.target.result;<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('placeholderText').style.display = 'none';</p>
+<p class="p1"><span class="Apple-converted-space">        </span>};</p>
+<p class="p1"><span class="Apple-converted-space">        </span>reader.readAsDataURL(e.target.files[0]);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>};</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>img.onload = syncSize;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>function syncSize() {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>cvs.width = img.clientWidth;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>cvs.height = img.clientHeight;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>cvs.style.width = img.clientWidth + "px";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>cvs.style.height = img.clientHeight + "px";</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>function draw() {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const text = document.getElementById('qwenInput').value;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const w = cvs.width; const h = cvs.height;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.clearRect(0, 0, w, h);</p>
+<p class="p2"><span class="Apple-converted-space">        </span></p>
+<p class="p1"><span class="Apple-converted-space">        </span>const colors = ['rgba(255,50,50,0.4)', 'rgba(50,255,50,0.4)', 'rgba(50,100,255,0.4)'];</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const strokes = ['#ff3232', '#32ff32', '#3264ff'];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>const reg = /&lt;ref&gt;(.*?)&lt;\/ref&gt;\s*&lt;(box|polygon)&gt;\((.*?)\)&lt;\/\2&gt;/g;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>let m, i=0;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>while ((m = reg.exec(text)) !== null) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const label = m[1];</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const type = m[2];</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const coords = m[3].split(',').map(Number);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const color = colors[i % 3];</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const stroke = strokes[i % 3];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>ctx.beginPath();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if(type === 'box') {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const [y1, x1, y2, x2] = coords.map((v,k) =&gt; k%2===0 ? v*h/1000 : v*w/1000);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>ctx.rect(x1, y1, x2-x1, y2-y1);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>labelAt(label, x1, y1, stroke);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>ctx.moveTo(coords[1]*w/1000, coords[0]*h/1000);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>for(let j=0; j&lt;coords.length; j+=2) ctx.lineTo(coords[j+1]*w/1000, coords[j]*h/1000);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>ctx.closePath();</p>
+<p class="p1"><span class="Apple-converted-space">                </span>labelAt(label, coords[1]*w/1000, coords[0]*h/1000, stroke);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>ctx.fillStyle = color; ctx.fill();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>ctx.strokeStyle = stroke; ctx.lineWidth = 3; ctx.stroke();</p>
+<p class="p1"><span class="Apple-converted-space">            </span>i++;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('dlBtn').style.display = 'block';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>function labelAt(txt, x, y, c) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.fillStyle = c; ctx.fillRect(x, y-25, ctx.measureText(txt).width+15, 25);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.fillStyle = "white"; ctx.font = "bold 14px sans-serif";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.fillText(txt, x+5, y-8);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>function download() {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const finalCvs = document.createElement('canvas');</p>
+<p class="p1"><span class="Apple-converted-space">        </span>finalCvs.width = img.naturalWidth; finalCvs.height = img.naturalHeight;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const fctx = finalCvs.getContext('2d');</p>
+<p class="p1"><span class="Apple-converted-space">        </span>fctx.drawImage(img, 0, 0);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const link = document.createElement('a');</p>
+<p class="p1"><span class="Apple-converted-space">        </span>link.download = 'qwen_result.png';</p>
+<p class="p1"><span class="Apple-converted-space">        </span>link.href = cvs.toDataURL();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>link.click();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1">&lt;/script&gt;</p>
+<p class="p2"><br></p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>
